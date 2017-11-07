@@ -32,6 +32,20 @@ std::ostream& operator<<( std::ostream& out, const Key< kKeyLength >& key );
 
 namespace detail {
 
+template< typename T >
+struct WidthPrintWrapper
+{
+  WidthPrintWrapper( const T& t ) : value( t ) {}
+  T value;
+};
+
+template< typename T >
+std::ostream& operator<<( std::ostream& out, const WidthPrintWrapper< T >& wrapper )
+{
+  out << std::hex << std::setfill( '0' ) << std::setw( 2 ) << wrapper.value;
+  return out;
+}
+
 } // namespace detail
 
 template< int kKeyLength >
@@ -58,9 +72,8 @@ auto Key< kKeyLength >::keyData() -> KeyArray&
 template< int kKeyLength >
 std::ostream& operator<<( std::ostream& out, const Key< kKeyLength >& key )
 {
-  out << std::setfill( '0' ) << std::setw( 2 ) << std::hex;
   std::copy( key.keyData().data(), key.keyData().data() + kKeyLength,
-    std::ostream_iterator< unsigned int >( out, " " )
+    std::ostream_iterator< detail::WidthPrintWrapper< unsigned int > >( out, " " )
   );
   return out;
 }

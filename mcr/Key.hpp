@@ -1,8 +1,11 @@
 #ifndef passman_Key_h_
 #define passman_Key_h_
 
+#include <algorithm>
 #include <array>
 #include <ostream>
+
+namespace mcr {
 
 template< int kKeyLength >
 class Key
@@ -24,11 +27,15 @@ private:
 template< int kKeyLength >
 std::ostream& operator<<( std::ostream& out, const Key< kKeyLength >& key );
 
+} // namespace mcr
+
 // Implementation
 
 #include <algorithm>
 #include <iomanip>
 #include <iterator>
+
+namespace mcr {
 
 namespace detail {
 
@@ -55,7 +62,10 @@ Key< kKeyLength >::Key()
 }
 
 template< int kKeyLength >
-Key< kKeyLength >::~Key() = default;
+Key< kKeyLength >::~Key()
+{
+
+}
 
 template< int kKeyLength >
 auto Key< kKeyLength >::keyData() const -> const KeyArray&
@@ -77,5 +87,7 @@ std::ostream& operator<<( std::ostream& out, const Key< kKeyLength >& key )
   );
   return out;
 }
+
+} // namespace mcr
 
 #endif // include guard

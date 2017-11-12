@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
 {
@@ -51,7 +52,10 @@ int main( int argc, char * argv [] )
   std::ostringstream ciphertext;
   encrypt( key, message, ciphertext );
   const auto printCiphertext = ciphertext.str();
-  std::copy( printCiphertext.cbegin(), printCiphertext.cend(),
+  std::vector< unsigned char > printBuffer( printCiphertext.size() );
+  std::copy( printCiphertext.begin(), printCiphertext.end(), printBuffer.begin() );
+  std::copy( printBuffer.cbegin(), printBuffer.cend(),
     std::ostream_iterator< mcr::detail::WidthPrintWrapper< unsigned int > >( std::cout, " " ) );
+  std::cout << std::endl;
   return 0;
 }

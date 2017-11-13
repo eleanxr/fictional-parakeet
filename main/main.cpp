@@ -5,31 +5,58 @@
 
 #include <gcrypt.h>
 
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
-void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
-{
+gcry_cipher_hd_t initAes256Ecb( const mcr::Key< 32 >& key ) {
   gcry_cipher_hd_t handle;
   gcry_cipher_open( &handle, GCRY_CIPHER_AES256, GCRY_CIPHER_MODE_ECB, 0 );
   gcry_cipher_setkey( handle, key.keyData().data(), 32 );
+  return handle;
+}
 
-  const int kBlockSize = 16;
+template< int N, typename T >
+using BlockFunction = std::function< void( const std::array< T, N >&, std::array< T, N >& ) >;
 
-  std::array< char, kBlockSize > inBuffer;
-  std::array< char, kBlockSize > outBuffer;
+template< int N, typename T >
+void forBlocks(
+  std::istream& input,
+  std::ostream& output,
+  const BlockFunction< N, T >& f )
+{
+  std::array< T, N > inBuffer;
+  std::array< T, N > outBuffer;
   while( input ) {
     std::fill( inBuffer.begin(), inBuffer.end(), 0 );
-    input.read( inBuffer.data(), kBlockSize );
+    input.read( inBuffer.data(), N );
+    f( inBuffer, outBuffer );
+    output.write( outBuffer.data(), N );
+  }
+}
+
+void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
+{
+  gcry_cipher_hd_t handle = initAes256Ecb( key );
+  const int kBlockSize = 16;
+
+  forBlocks< kBlockSize, char >( input, output,
+    [&handle](
+      const std::array< char, kBlockSize >& inBlock,
+      std::array< char, kBlockSize >& outBlock )
+    {
     gcry_cipher_encrypt(
       handle,
-      outBuffer.data(),
+      outBlock.data(),
       kBlockSize,
-      inBuffer.data(),
+      inBlock.data(),
       kBlockSize );
-    output.write( outBuffer.data(), kBlockSize );
-  }
+    } );
+}
+
+void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output ) {
+
 }
 
 int main( int argc, char * argv [] )

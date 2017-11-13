@@ -55,8 +55,23 @@ void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& outp
     } );
 }
 
-void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output ) {
+void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
+{
+  gcry_cipher_hd_t handle = initAes256Ecb( key );
+  const int kBlockSize = 16;
 
+  forBlocks< kBlockSize, char >( input, output,
+    [&handle](
+      const std::array< char, kBlockSize >& inBlock,
+      std::array< char, kBlockSize >& outBlock )
+    {
+    gcry_cipher_decrypt(
+      handle,
+      outBlock.data(),
+      kBlockSize,
+      inBlock.data(),
+      kBlockSize );
+    } );
 }
 
 int main( int argc, char * argv [] )
@@ -83,6 +98,11 @@ int main( int argc, char * argv [] )
   std::copy( printCiphertext.begin(), printCiphertext.end(), printBuffer.begin() );
   std::copy( printBuffer.cbegin(), printBuffer.cend(),
     std::ostream_iterator< mcr::detail::WidthPrintWrapper< unsigned int > >( std::cout, " " ) );
+  std::cout << std::endl;
+
+  std::cout << "=====" << std::endl;
+  std::istringstream ciphertextInput( printCiphertext );
+  decrypt( key, ciphertextInput, std::cout );
   std::cout << std::endl;
   return 0;
 }

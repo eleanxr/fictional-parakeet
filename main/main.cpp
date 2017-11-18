@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <vector>
 
@@ -18,7 +19,8 @@ gcry_cipher_hd_t initAes256Ecb( const mcr::Key< 32 >& key ) {
 }
 
 template< int N, typename T >
-using BlockFunction = std::function< void( const std::array< T, N >&, std::array< T, N >& ) >;
+using BlockFunction =
+    std::function<void(const std::array<T, N> &, std::array<T, N> &)>;
 
 template< int N, typename T >
 void forBlocks(
@@ -33,8 +35,8 @@ void forBlocks(
     input.read( inBuffer.data(), N );
     f( inBuffer, outBuffer );
     output.write( outBuffer.data(), N );
-  }
-}
+   }
+ }
 
 void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
 {
@@ -90,9 +92,8 @@ int main( int argc, char * argv [] )
     key.keyData().data() );
   std::cout << key << std::endl;
   std::cout << "=====" << std::endl;
-  std::istringstream message( "This is a test" );
   std::ostringstream ciphertext;
-  encrypt( key, message, ciphertext );
+  encrypt( key, std::cin, ciphertext );
   const auto printCiphertext = ciphertext.str();
   std::vector< unsigned char > printBuffer( printCiphertext.size() );
   std::copy( printCiphertext.begin(), printCiphertext.end(), printBuffer.begin() );

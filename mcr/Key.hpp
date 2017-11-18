@@ -7,6 +7,7 @@
 
 namespace mcr {
 
+/// A key with a compile-time specified length.
 template< int kKeyLength >
 class Key
 {

@@ -2,6 +2,8 @@ project( Main )
 
 find_package( Gcrypt REQUIRED )
 
+include_directories( "${Gcrypt_INCLUDE_DIRS}" )
+
 file( GLOB headers *.h )
 file( GLOB sources *.cpp )
 

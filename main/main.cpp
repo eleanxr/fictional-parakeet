@@ -46,12 +46,12 @@ void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& outp
       const std::array< char, kBlockSize >& inBlock,
       std::array< char, kBlockSize >& outBlock )
     {
-    gcry_cipher_encrypt(
-      handle,
-      outBlock.data(),
-      kBlockSize,
-      inBlock.data(),
-      kBlockSize );
+      gcry_cipher_encrypt(
+        handle,
+        outBlock.data(),
+        kBlockSize,
+        inBlock.data(),
+        kBlockSize );
     } );
 }
 

@@ -102,20 +102,34 @@ void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& outp
 void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
 {
   gcry_cipher_hd_t handle = initAes256Ecb( key );
-  const int kBlockSize = 16;
+  constexpr int kBlockSize = 16;
+  std::array< char, kBlockSize > inBuffer;
+  std::array< char, kBlockSize > outBuffer;
 
-  forBlocks< kBlockSize, char >( input, output,
-    [&handle](
-      const std::array< char, kBlockSize >& inBlock,
-      std::array< char, kBlockSize >& outBlock )
-    {
-      gcry_cipher_decrypt(
-        handle,
-        outBlock.data(),
-        kBlockSize,
-        inBlock.data(),
-        kBlockSize );
-      } );
+  // forBlocks< kBlockSize, char >( input, output,
+  //   [&handle](
+  //     const std::array< char, kBlockSize >& inBlock,
+  //     std::array< char, kBlockSize >& outBlock )
+  //   {
+  //     gcry_cipher_decrypt(
+  //       handle,
+  //       outBlock.data(),
+  //       kBlockSize,
+  //       inBlock.data(),
+  //       kBlockSize );
+  //     } );
+
+  while ( input ) {
+    input.read( inBuffer.data(), inBuffer.size() );
+    std::fill( outBuffer.begin(), outBuffer.end(), 0 );
+    gcry_cipher_decrypt(
+      handle,
+      outBuffer.data(),
+      kBlockSize,
+      inBuffer.data(),
+      kBlockSize );
+    output.write( outBuffer.data(), outBuffer.size() );
+  }
 }
 
 void outputBlocksInColumns( const int blockSize, std::istream& input, std::ostream& output )

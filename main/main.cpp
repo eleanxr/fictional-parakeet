@@ -38,23 +38,65 @@ void forBlocks(
    }
  }
 
+template< std::size_t kBlockSize >
+void encryptAndOutputBlock(
+  const std::array< char, kBlockSize >& inBuffer,
+  const std::array< char, kBlockSize >& outBuffer,
+  std::ostream& output )
+{
+
+}
+
 void encrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
 {
   gcry_cipher_hd_t handle = initAes256Ecb( key );
-  const int kBlockSize = 16;
+  constexpr std::size_t kBlockSize = 16;
+  std::array< char, kBlockSize > inBuffer;
+  std::array< char, kBlockSize > outBuffer;
+  std::streamsize streamBytes = 0;
+  constexpr auto streamsizeLength = sizeof( std::streamsize );
+  static_assert( streamsizeLength <= kBlockSize );
+  bool lengthBlockRequired = true;
+  while ( input ) {
+    std::fill( inBuffer.begin(), inBuffer.end(), 0 );
+    const auto charactersRead = input.read( inBuffer.data(), inBuffer.size() ).gcount();
+    streamBytes += charactersRead;
+    if ( input.eof() ) {
+      // end of input, if there's room, write the length at the end of the block. Otherwise, add an
+      // extra block.
+      if ( inBuffer.size() - charactersRead > streamsizeLength ) {
+        // There's enough space to write the length of the message in the final block
+        std::copy(
+          &streamBytes,
+          &streamBytes + streamsizeLength,
+          inBuffer.end() - streamsizeLength );
+        lengthBlockRequired = false;
+      }
+    }
+    gcry_cipher_encrypt(
+      handle,
+      outBuffer.data(),
+      kBlockSize,
+      inBuffer.data(),
+      kBlockSize );
+    output.write( outBuffer.data(), outBuffer.size() );
+  }
 
-  forBlocks< kBlockSize, char >( input, output,
-    [&handle](
-      const std::array< char, kBlockSize >& inBlock,
-      std::array< char, kBlockSize >& outBlock )
-    {
-      gcry_cipher_encrypt(
-        handle,
-        outBlock.data(),
-        kBlockSize,
-        inBlock.data(),
-        kBlockSize );
-    } );
+  // Write the message length if necessary.
+  if ( lengthBlockRequired ) {
+    std::fill( inBuffer.begin(), inBuffer.end(), 0 );
+    std::copy(
+      &streamBytes,
+      &streamBytes + streamsizeLength,
+      inBuffer.end() - streamsizeLength );
+    gcry_cipher_encrypt(
+      handle,
+      outBuffer.data(),
+      kBlockSize,
+      inBuffer.data(),
+      kBlockSize );
+    output.write( outBuffer.data(), outBuffer.size() );
+  }
 }
 
 void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& output )
@@ -67,13 +109,13 @@ void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& outp
       const std::array< char, kBlockSize >& inBlock,
       std::array< char, kBlockSize >& outBlock )
     {
-    gcry_cipher_decrypt(
-      handle,
-      outBlock.data(),
-      kBlockSize,
-      inBlock.data(),
-      kBlockSize );
-    } );
+      gcry_cipher_decrypt(
+        handle,
+        outBlock.data(),
+        kBlockSize,
+        inBlock.data(),
+        kBlockSize );
+      } );
 }
 
 void outputBlocksInColumns( const int blockSize, std::istream& input, std::ostream& output )

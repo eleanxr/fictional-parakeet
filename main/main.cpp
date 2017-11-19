@@ -76,6 +76,19 @@ void decrypt( const mcr::Key< 32 >& key, std::istream& input, std::ostream& outp
     } );
 }
 
+void outputBlocksInColumns( const int blockSize, std::istream& input, std::ostream& output )
+{
+  std::vector< unsigned char > printBuffer( blockSize );
+  while ( input ) {
+    std::fill( printBuffer.begin(), printBuffer.end(), 0 );
+    if ( input.read( reinterpret_cast< char * >( printBuffer.data() ), printBuffer.size() ).gcount() > 0 ) {
+      std::copy( printBuffer.begin(), printBuffer.end(),
+        std::ostream_iterator< mcr::detail::WidthPrintWrapper< unsigned int > >( output, " " ) );
+      output << std::endl;
+    }
+  }
+}
+
 int main( int argc, char * argv [] )
 {
   std::string password{ "notASecret" };
@@ -94,11 +107,10 @@ int main( int argc, char * argv [] )
   std::cout << "=====" << std::endl;
   std::ostringstream ciphertext;
   encrypt( key, std::cin, ciphertext );
+  std::cout << std::endl;
   const auto printCiphertext = ciphertext.str();
-  std::vector< unsigned char > printBuffer( printCiphertext.size() );
-  std::copy( printCiphertext.begin(), printCiphertext.end(), printBuffer.begin() );
-  std::copy( printBuffer.cbegin(), printBuffer.cend(),
-    std::ostream_iterator< mcr::detail::WidthPrintWrapper< unsigned int > >( std::cout, " " ) );
+  std::istringstream ciphertextPrintStream( printCiphertext );
+  outputBlocksInColumns( 16, ciphertextPrintStream, std::cout );
   std::cout << std::endl;
 
   std::cout << "=====" << std::endl;
